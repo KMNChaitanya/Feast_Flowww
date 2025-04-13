@@ -125,42 +125,45 @@ const SocialButton = styled.button`
   }
 `;
 
-const Loginsignup = () => {
-  const [isLogin, setIsLogin] = useState(true); // toggle between login and signup
+const Login = () => {
+  const [isLogin, setIsLogin] = useState(true);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState('');
 
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(''); // Clear previous errors
 
     if (!isLogin && password !== confirmPassword) {
-      alert("Passwords do not match");
+      setError("Passwords do not match");
       return;
     }
 
     try {
+      const url = isLogin ? 'http://localhost:5000/api/auth/login' : 'http://localhost:5000/api/auth/signup';
+      const data = isLogin ? { email, password } : { fullName, email, password };
+
+      const response = await axios.post(url, data);
+      console.log('Login/Signup Response:', response.data);
+      
       if (isLogin) {
-        // Handle Login
-        const response = await axios.post('http://localhost:5000/api/login', { email, password });
-        console.log('Logged in:', response.data);
+        localStorage.setItem('token', response.data.token); // Ensure token is saved
+        console.log('Token saved:', response.data.token);
         alert('Logged in successfully');
-        navigate('/dashboard');
-        // Save token to local storage or handle it as needed
+        navigate('/donate'); // Redirect to donate page after login
       } else {
-        // Handle Sign Up for regular users
-        const response = await axios.post('http://localhost:5000/api/signup', { fullName, email, password });
-        console.log('Signed up:', response.data);
         alert('Signed up successfully, please login');
         setIsLogin(true);
       }
     } catch (err) {
-      console.error(isLogin ? 'Login error:' : 'Signup error:', err);
-      alert(isLogin ? 'Invalid email or password' : 'Signup failed');
+      console.error('Auth Error:', err.response?.data || err.message);
+      setError(err.response?.data?.message || (isLogin ? 'Invalid email or password' : 'Signup failed'));
     }
   };
 
@@ -176,6 +179,7 @@ const Loginsignup = () => {
       </ToggleContainer>
       <FormContainer>
         <FormTitle>{isLogin ? 'Login' : 'Sign Up'}</FormTitle>
+        {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
         {!isLogin && (
           <InputField 
             type="text" 
@@ -221,7 +225,7 @@ const Loginsignup = () => {
             <ResetLink href="#">Reset password</ResetLink>
           </CheckboxContainer>
         )}
-        <SubmitButton type="submit" onClick={handleSubmit}>
+        <SubmitButton onClick={handleSubmit}>
           {isLogin ? 'Sign in' : 'Sign up'}
         </SubmitButton>
         <Separator>or</Separator>
@@ -248,4 +252,4 @@ const Loginsignup = () => {
   );
 };
 
-export default Loginsignup;
+export default Login;
